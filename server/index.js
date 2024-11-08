@@ -11,7 +11,7 @@ const server = http.createServer((req, res) => {
 const io = socketIo(server, {
     transports: ['websocket', 'polling'],
     cors: {
-        origin: '*',
+        origin: 'https://testChatClient.raphaelmoynat.com',
         methods: ['GET', 'POST'],
     }
 

@@ -1,4 +1,4 @@
-const socket = io("ws://localhost:8080")
+const socket = io("wss://testChatServer.raphaelmoynat.com")
 const btn = document.querySelector('button')
 
 socket.on('message', (message) => {
