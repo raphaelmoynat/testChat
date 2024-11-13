@@ -1,45 +1,58 @@
 const http = require('http');
+const express = require('express');
+const app = express();
 const socketIo = require('socket.io');
+const mongoose = require('mongoose');
 
-const server = http.createServer((req, res) => {
+const MONGODB_URI = "mongodb://127.0.0.1:27017/chat";
 
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('serveur socket.io en fonctionnement');
+const MessageController = require('./controllers/message')
 
-})
+mongoose.connect(MONGODB_URI)
+    .then(() => {
+        console.log('MongoDB connected')
+    })
+    .catch((err) => {
+        console.error(err)
+    });
+
+const server = http.createServer(app)
 
 const io = socketIo(server, {
     transports: ['websocket', 'polling'],
     cors: {
-        origin: 'https://testChatClient.raphaelmoynat.com',
+        origin: '*',
         methods: ['GET', 'POST'],
     }
 
 })
 
-io.on('connection', (socket) => {
-    console.log('New user connect to the server');
+io.on('connection', async (socket) => {
+    console.log('New user connected to the server')
 
-    socket.on('message', (message) => {
-        console.log('Received message from ' + socket.id);
-        console.log(message.content);
+    try {
+        const messages = await MessageController.getAllMessages()
+        socket.emit('previousMessages', messages)
+    } catch (error) {
+        console.log(error)
+    }
 
-        try{
-            io.emit('message',{
+    socket.on('message', async (message) => {
+        console.log('message:', message.content)
+
+        try {
+            const savedMessage = await MessageController.saveMessage(message.content)
+            io.emit('message', {
                 author : socket.id,
-                content: message.content,
-            });
-        }catch (e) {
-            console.log(e);
-        }finally {
-            console.log(io.sockets.sockets.size);
+                content: savedMessage.content
+            })
+        } catch (error) {
+            console.log(error)
         }
-    })
-
-})
-
+    });
+});
 
 
     server.listen(8080, ()=>{
-        console.log('Server listening on port 8080');
+        console.log('Server listening on port 8080')
     });
